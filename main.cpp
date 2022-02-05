@@ -2,7 +2,7 @@
  * @author Natasha Bailey
  * CSCI 406, Algorithms Project 1
  * Traveling Salesperson Problem
- * Greedy and Exhaustive heuristics
+ * Greedy-Heuristic and Exhaustive Search
  */
 
 #include <iostream>
@@ -15,6 +15,11 @@
 using namespace std;
 
 void greedyHeuristic(const vector<Point>&);
+void exhaustiveSearch(const vector<Point>&);
+vector<vector<Point>> generatePermutations(const vector<Point>&);
+void recursePermutations(vector<vector<Point>>&, const vector<Point>&, const vector<Point>&);
+vector<Point> makePath(Point rootPoint, const vector<Point>&);
+double pathDistance(const vector<Point>&);
 
 int main() {
     int n;
@@ -47,6 +52,8 @@ int main() {
 
     cout << endl;
     greedyHeuristic(points);
+    cout << endl;
+    exhaustiveSearch(points);
 
     inputFile.close();
 }
@@ -97,8 +104,73 @@ void greedyHeuristic(const vector<Point>& points) {
     totalDistance += currentPoint.distanceTo(rootPoint);
 
     // Print out distance and path
-    cout << fixed << setprecision(2) << totalDistance << endl;
+    cout << fixed << setprecision(3) << totalDistance << endl;
     for(Point p : visitedPoints) {
         cout << p.x << " " << p.y << endl;
     }
+}
+
+void exhaustiveSearch(const vector<Point>& points) {
+    Point rootPoint = points.front();
+    vector<Point> nonRootPoints = points;
+    nonRootPoints.erase(nonRootPoints.begin());
+    vector<vector<Point>> permutations = generatePermutations(nonRootPoints);
+    vector<Point> currentPath = makePath(rootPoint, permutations.front());
+
+    double minDistance = pathDistance(currentPath);
+    vector<Point> minPath = currentPath;
+    for(vector<Point> permutation : permutations) {
+        currentPath = makePath(rootPoint, permutation);
+        if(pathDistance(currentPath) < minDistance) {
+            minDistance = pathDistance(currentPath);
+            minPath = currentPath;
+        }
+    }
+
+    cout << fixed << setprecision(3) << minDistance << endl;
+    for(Point p : minPath) {
+        cout << p.x << " " << p.y << endl;
+    }
+}
+
+/**
+ * Source: https://www.baeldung.com/cs/array-generate-all-permutations
+ * Very helpful article that describes the recursive algorithm below.
+ */
+vector<vector<Point>> generatePermutations(const vector<Point>& points) {
+    vector<vector<Point>> generatedPermutations;
+    vector<Point> emptyStartingVector;
+    recursePermutations(generatedPermutations, emptyStartingVector, points);
+
+    return generatedPermutations;
+}
+
+void recursePermutations(vector<vector<Point>>& generatedPermutations, const vector<Point>& currentPermutation,
+                         const vector<Point>& pointsLeft) {
+    if(!pointsLeft.empty()) {
+        for(int i = 0; i < pointsLeft.size(); i++) {
+            vector<Point> nextPermutation = currentPermutation;
+            nextPermutation.push_back(pointsLeft.at(i));
+            vector<Point> newPointsLeft = pointsLeft;
+            newPointsLeft.erase(newPointsLeft.begin() + i);
+            recursePermutations(generatedPermutations, nextPermutation, newPointsLeft);
+        }
+    } else {
+        generatedPermutations.push_back(currentPermutation);
+    }
+}
+
+vector<Point> makePath(Point rootPoint, const vector<Point>& otherPoints) {
+    vector<Point> path = otherPoints;
+    path.push_back(rootPoint);
+    path.insert(path.begin(), rootPoint);
+    return path;
+}
+
+double pathDistance(const vector<Point>& path) {
+    double distance = 0;
+    for(int i = 0; i < path.size() - 1; i++) {
+        distance += path.at(i).distanceTo(path.at(i + 1));
+    }
+    return distance;
 }
